@@ -1,0 +1,389 @@
+# Step 1: Upload the file
+from google.colab import files
+uploaded = files.upload()
+# Step 1: Upload and read the CSV (if not already done)
+
+import pandas as pd
+import io
+# Accessing the file using the correct key from the 'uploaded' dictionary
+df = pd.read_csv(io.BytesIO(uploaded['Churn_Modelling (1).csv'])) 
+
+# Step 2: Basic inspection
+print("Shape of dataset:", df.shape)
+print("\nColumn names:\n", df.columns)
+print("\nData types:\n", df.dtypes)
+print("\nFirst 5 rows:\n", df.head())
+
+# Step 3: Summary statistics
+print("\nSummary statistics:\n", df.describe())
+
+# Step 4: Check for missing values
+print("\nMissing values:\n", df.isnull().sum())
+
+# Step 5: Count of churned vs not churned
+print("\nChurn value counts:\n", df['Exited'].value_counts())
+# Check for missing values
+missing_values = df.isnull().sum()
+print("Missing Values Per Column:\n", missing_values)
+
+# Check for any columns with missing values
+if missing_values.any():
+    print("\nColumns with missing values:\n", missing_values[missing_values > 0])
+else:
+    print("\n✅ No missing values found.")
+
+# Check for duplicate rows
+duplicate_rows = df.duplicated().sum()
+print(f"\nNumber of duplicate rows: {duplicate_rows}")
+
+# Show the duplicate rows if needed
+if duplicate_rows > 0:
+    print("\nDuplicate rows:")
+    print(df[df.duplicated()])
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Set style
+sns.set(style="whitegrid")
+
+# 1. Churn Distribution
+plt.figure(figsize=(6, 4))
+sns.countplot(x='Exited', data=df)
+plt.title('Churn Distribution (0 = No, 1 = Yes)')
+plt.xlabel('Churned')
+plt.ylabel('Count')
+plt.show()
+
+# 2. Gender vs Churn
+plt.figure(figsize=(6, 4))
+sns.countplot(x='Gender', hue='Exited', data=df)
+plt.title('Churn by Gender')
+plt.xlabel('Gender')
+plt.ylabel('Count')
+plt.show()
+
+# 3. Geography vs Churn
+plt.figure(figsize=(6, 4))
+sns.countplot(x='Geography', hue='Exited', data=df)
+plt.title('Churn by Geography')
+plt.xlabel('Country')
+plt.ylabel('Count')
+plt.show()
+
+# 4. Age distribution by Churn
+plt.figure(figsize=(8, 5))
+sns.kdeplot(data=df[df['Exited'] == 0]['Age'], label='Not Churned', shade=True)
+sns.kdeplot(data=df[df['Exited'] == 1]['Age'], label='Churned', shade=True)
+plt.title('Age Distribution by Churn')
+plt.xlabel('Age')
+plt.legend()
+plt.show()
+
+# 5. Balance vs Churn (Boxplot)
+plt.figure(figsize=(8, 5))
+sns.boxplot(x='Exited', y='Balance', data=df)
+plt.title('Balance by Churn')
+plt.xlabel('Churned')
+plt.ylabel('Balance')
+plt.show()
+
+!pip install gradio scikit-learn
+import gradio as gr
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import io
+
+# Assuming 'df' is your DataFrame loaded earlier 
+# Create and fit LabelEncoders for categorical features
+
+# Create LabelEncoder for Geography
+le_geo = LabelEncoder()
+le_geo.fit(df['Geography'])
+
+# Create LabelEncoder for Gender
+le_gender = LabelEncoder()
+le_gender.fit(df['Gender'])
+
+# ... (Rest of your Gradio interface code)
+
+def predict_churn(CreditScore, Geography, Gender, Age, Tenure, Balance, NumOfProducts,
+                  HasCrCard, IsActiveMember, EstimatedSalary):
+    
+    # Encode categorical inputs
+    geography = le_geo.transform([Geography])[0]
+    gender = le_gender.transform([Gender])[0]
+    
+    # ... (Rest of your prediction logic) ...
+    
+
+# Gradio interface
+interface = gr.Interface(
+    fn=predict_churn,
+    inputs=[
+        gr.Number(label="Credit Score"),
+        gr.Dropdown(choices=le_geo.classes_.tolist(), label="Geography"),
+        gr.Dropdown(choices=le_gender.classes_.tolist(), label="Gender"),
+        gr.Number(label="Age"),
+        gr.Number(label="Tenure"),
+        gr.Number(label="Balance"),
+        gr.Number(label="Number of Products"),
+        gr.Radio(choices=[0, 1], label="Has Credit Card"),
+        gr.Radio(choices=[0, 1], label="Is Active Member"),
+        gr.Number(label="Estimated Salary")
+    ],
+    outputs="text",
+    title="Customer Churn Prediction"
+)
+
+interface.launch()
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression  # Example model
+
+# Assuming 'df' is your DataFrame and 'le_geo', 'le_gender' are LabelEncoders
+
+# ... (Your previous code for data loading, preprocessing, etc.) ...
+
+# 1. Prepare data for training
+# Select features and target
+X = df[['CreditScore', 'Geography', 'Gender', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary']]
+y = df['Exited']
+
+# Encode categorical features
+X['Geography'] = le_geo.transform(X['Geography'])
+X['Gender'] = le_gender.transform(X['Gender'])
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)  # Adjust test_size and random_state as needed
+
+# 2. Train a model (example using Logistic Regression)
+model = LogisticRegression()  # Create a Logistic Regression model
+model.fit(X_train, y_train)  # Train the model on the training data
+
+# ... (Rest of your code, including prediction) ...
+
+# In your prediction part (ipython-input-15-6a0def60e524):
+
+# Make prediction
+prediction = model.predict(input_array)[0]  # 'model' is now defined
+
+# Interpret result
+result = "Churned" if prediction == 1 else "Not Churned"
+print("Prediction:", result)
+# Predict using the model
+prediction = model.predict(new_df)[0]
+result = "Churned" if prediction == 1 else "Not Churned"
+print("Prediction:", result)
+import pandas as pd
+
+# Load dataset
+df = pd.read_csv('Churn_Modelling.csv')
+
+# Display column names
+print("🔍 All Columns in Dataset:")
+print(df.columns.tolist())
+
+# Drop columns that are not useful as features
+df_cleaned = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis=1)
+
+# Define target and features
+target = 'Exited'
+features = df_cleaned.drop(columns=[target]).columns.tolist()
+
+print("\n🎯 Target Variable:")
+print(target)
+
+print("\n🧮 Feature Variables:")
+print(features)
+from sklearn.preprocessing import LabelEncoder
+
+# Load and clean dataset
+df = pd.read_csv('Churn_Modelling.csv')
+df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis=1)
+
+# Initialize encoders
+le_geo = LabelEncoder()
+le_gender = LabelEncoder()
+
+# Encode categorical columns
+df['Geography'] = le_geo.fit_transform(df['Geography'])
+df['Gender'] = le_gender.fit_transform(df['Gender'])
+
+print("\n🔁 After Encoding:")
+print(df[['Geography', 'Gender']].head())
+import pandas as pd
+
+# Load and clean dataset
+df = pd.read_csv('Churn_Modelling.csv')
+df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis=1)
+
+# One-hot encode 'Geography' and 'Gender'
+df_encoded = pd.get_dummies(df, columns=['Geography', 'Gender'], drop_first=True)
+
+# Show resulting DataFrame
+print("✅ Columns after One-Hot Encoding:\n")
+print(df_encoded.columns.tolist())
+
+print("\n🧾 First 5 rows:\n")
+print(df_encoded.head())
+from sklearn.preprocessing import StandardScaler
+
+# Separate features and target
+X = df_encoded.drop('Exited', axis=1)
+y = df_encoded['Exited']
+
+# Initialize scaler
+scaler = StandardScaler()
+
+# Fit and transform the features
+X_scaled = scaler.fit_transform(X)
+
+# Optional: convert back to DataFrame for inspection
+X_scaled_df = pd.DataFrame(X_scaled, columns=X.columns)
+
+# Show scaled data
+print("✅ Scaled Features (first 5 rows):")
+print(X_scaled_df.head())
+from sklearn.model_selection import train_test_split
+
+# Split scaled features and target into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# Output shapes
+print(f"✅ Training set: {X_train.shape}, Labels: {y_train.shape}")
+print(f"✅ Testing set:  {X_test.shape}, Labels: {y_test.shape}")
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# Initialize and train model
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Evaluate model
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+report = classification_report(y_test, y_pred)
+
+print(f"✅ Accuracy: {accuracy:.4f}")
+print("\n📊 Confusion Matrix:\n", conf_matrix)
+print("\n📄 Classification Report:\n", report)
+from sklearn.metrics import confusion_matrix
+
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("\n📊 Confusion Matrix:\n", conf_matrix)
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# 1. New customer input
+new_customer = {
+    'CreditScore': 650,
+    'Geography': 'Spain',
+    'Gender': 'Male',
+    'Age': 35,
+    'Tenure': 5,
+    'Balance': 75000.0,
+    'NumOfProducts': 2,
+    'HasCrCard': 1,
+    'IsActiveMember': 1,
+    'EstimatedSalary': 50000.0
+}
+
+# 2. Convert to DataFrame
+new_df = pd.DataFrame([new_customer])
+
+# 3. One-hot encoding (same as training)
+new_df_encoded = pd.get_dummies(new_df, columns=['Geography', 'Gender'], drop_first=True)
+
+# 4. Ensure all expected columns are present
+expected_cols = ['CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 
+                 'HasCrCard', 'IsActiveMember', 'EstimatedSalary',
+                 'Geography_Germany', 'Geography_Spain', 'Gender_Male']
+
+for col in expected_cols:
+    if col not in new_df_encoded.columns:
+        new_df_encoded[col] = 0
+
+# 5. Reorder columns to match training data
+new_df_encoded = new_df_encoded[expected_cols]
+
+# 6. Scale using the same scaler as training
+new_scaled = scaler.transform(new_df_encoded)
+
+# 7. Predict
+prediction = model.predict(new_scaled)[0]
+result = "Churned" if prediction == 1 else "Not Churned"
+
+# ✅ Output
+print("Prediction result for new customer:", result)
+import gradio as gr
+import pandas as pd
+import numpy as np
+
+# Assuming `model` and `scaler` are already trained
+# Define expected columns for model input
+expected_cols = ['CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts',
+                 'HasCrCard', 'IsActiveMember', 'EstimatedSalary',
+                 'Geography_Germany', 'Geography_Spain', 'Gender_Male']
+
+def preprocess_and_predict(credit_score, geography, gender, age, tenure, balance,
+                           num_products, has_cr_card, is_active, salary):
+    # Create DataFrame from input
+    input_dict = {
+        'CreditScore': credit_score,
+        'Geography': geography,
+        'Gender': gender,
+        'Age': age,
+        'Tenure': tenure,
+        'Balance': balance,
+        'NumOfProducts': num_products,
+        'HasCrCard': has_cr_card,
+        'IsActiveMember': is_active,
+        'EstimatedSalary': salary
+    }
+    df = pd.DataFrame([input_dict])
+    
+    # One-hot encode
+    df = pd.get_dummies(df, columns=['Geography', 'Gender'], drop_first=True)
+
+    # Add any missing columns
+    for col in expected_cols:
+        if col not in df.columns:
+            df[col] = 0
+    df = df[expected_cols]
+
+    # Scale input
+    scaled_input = scaler.transform(df)
+
+    # Predict
+    prediction = model.predict(scaled_input)[0]
+    return "Churned" if prediction == 1 else "Not Churned"
+
+# Gradio interface
+interface = gr.Interface(
+    fn=preprocess_and_predict,
+    inputs=[
+        gr.Slider(300, 900, step=1, label="Credit Score"),
+        gr.Dropdown(['France', 'Germany', 'Spain'], label="Geography"),
+        gr.Dropdown(['Male', 'Female'], label="Gender"),
+        gr.Slider(18, 100, step=1, label="Age"),
+        gr.Slider(0, 10, step=1, label="Tenure"),
+        gr.Number(label="Balance"),
+        gr.Slider(1, 4, step=1, label="Number of Products"),
+        gr.Radio([0, 1], label="Has Credit Card (0=No, 1=Yes)"),
+        gr.Radio([0, 1], label="Is Active Member (0=No, 1=Yes)"),
+        gr.Number(label="Estimated Salary")
+    ],
+    outputs="text",
+    title="Customer Churn Prediction",
+    description="Enter customer details to predict whether they will churn."
+)
+
+# Launch the app
+interface.launch()
+
